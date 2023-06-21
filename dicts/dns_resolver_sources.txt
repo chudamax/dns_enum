@@ -1,0 +1,1 @@
+https://raw.githubusercontent.com/i223t/DnsResolvers/main/good.txt
