@@ -11,7 +11,7 @@ def _exec_and_readlines(cmd):
 
     return [j for j in stdout.splitlines() if j != b'\n']
 
-def run_amass(domain, config_path, temp_dir='/tmp', timeout=1):
+def run_amass(domain, config_path, temp_dir='/tmp', timeout=60):
 
     filename = str(uuid.uuid4())
     temp_path = os.path.join(temp_dir,'{0}.json'.format(filename))
