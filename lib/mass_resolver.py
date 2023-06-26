@@ -54,10 +54,16 @@ class MassDnsResolver:
 
     def _simple_resolve(self, domains, resolvers_path, types=['A','CNAME'], blacklist=[]):
 
-        print ('Simple resolve was requested for domains:{}...'.format(domains[:20]))
+        #print ('Simple resolve was requested for domains:{}...'.format(domains[:20]))
         results_set = set()
 
-        for domains_chunk in chunks(domains, 100000):
+        step=10000
+        i = 0
+
+        for domains_chunk in chunks(domains, step):
+            i+=1
+            print (i*step, len(domains))
+
             if len(results_set) > 10000:
                 print ('It looks that wildcard defense was bypassed, return nothing')
                 return []
@@ -81,7 +87,7 @@ class MassDnsResolver:
             for t in types:
                 massdns_cmd += ['-t',t]
 
-            print (' '.join(massdns_cmd))
+            #print (' '.join(massdns_cmd))
 
             self._exec_and_readlines(cmd=massdns_cmd, domains=domains_chunk)
 
@@ -111,6 +117,8 @@ class MassDnsResolver:
 
                         response = (('name',name),('data',data),('type',answer['type']))
                         results_set.add(response)
+
+            print (results_set)
 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -143,7 +151,7 @@ class MassDnsResolver:
 
             #print('Fakedomains generated:{}'.format(len(fake_domains)))
 
-            print ('Fakedomains candidates to check ', len(fake_domains))
+            #print ('Fakedomains candidates to check ', len(fake_domains))
 
             wildcard_results = self._simple_resolve(domains = fake_domains, resolvers_path=self.mass_resolvers_path, types=types)
 
