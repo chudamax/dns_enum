@@ -7,8 +7,9 @@ import dnsgen
 
 from lib.update_resolvers import DnsResolverProvider
 from lib.mass_resolver import MassDnsResolver
-from lib.ip_enrichment import IPEnricher
 
+from lib.amass import run_amass
+from lib.ip_enrichment import IPEnricher
 from lib.dnsgen import generate
 
 args = {'dns_checker_threads':100}
@@ -25,6 +26,8 @@ def parse_args():
     parser._optionals.title = "OPTIONS"
     parser.add_argument('--update-mass-resolvers', help="check mass resolvers", action='store_true')
     parser.add_argument('--enrich', help="enrich resolved domains with data from whois", action='store_true')
+    parser.add_argument('--amass', help="check with passive amass checks", action='store_true')
+    parser.add_argument('--debug', help="debug", action='store_true')
 
     parser.add_argument('-w','--wordlist', help="dns names wordlist", default='n0kovo_subdomains_small.txt')
     parser.add_argument('--alt-wordlist', help="alt mutations wordlist", default='altmutations.txt')
@@ -38,7 +41,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print (args)
 
     trusted_resolvers_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/dicts/trusted_resolvers.txt")
     mass_resolvers_unchecked_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/dicts/mass_resolvers_unchecked.txt")
@@ -48,6 +50,10 @@ def main():
 
     temp_directory_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/temp/")
     results_directory_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/results/")
+
+    amass_config_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/3rdparty/amass/config.ini")
+
+    debug = args.debug
 
     resolver = MassDnsResolver(
         trusted_resolvers_path = trusted_resolvers_path,
@@ -80,6 +86,7 @@ def main():
         print ('\n')   
         print ('(*) Done')
 
+
     #load the subdomain wordlist
     with open(wordlist_path) as f:
         subodomains = [s.strip() for s in f.readlines()]
@@ -99,14 +106,31 @@ def main():
     for root_domain in root_domains:
         resolved_results = []
 
-        domains_to_check = [f"{subdomain}.{root_domain}" for subdomain in subodomains]
-        domains_to_check = domains_to_check
+        domains_to_check = []
+        #amass
+        if args.amass:
+            amass_domains = run_amass(
+                domain=root_domain,
+                config_path=amass_config_path,
+                temp_dir=temp_directory_path,
+                timeout=60)
+
+            print ("Amass domains:")
+            for domain in amass_domains:
+                domains_to_check = [domain['name'] for domain in amass_domains]
+
+                print (domain)
+
+        #bruteforce
+        #subodomains = subodomains[:10]
+        domains_to_check += [f"{subdomain}.{root_domain}" for subdomain in subodomains]
+
+        #print (f"Domains to check: {domains_to_check}")
 
         resolved_domains = resolver.mass_resolve(domains=domains_to_check, types=['A','CNAME'],  recheck=True)
         for result in resolved_domains:
             if not result in resolved_results:
                 resolved_results.append(result)
-
 
         resolved_names = [d['name'] for d in resolved_domains if root_domain in d['name']]
 
@@ -126,6 +150,16 @@ def main():
                 resolved_results.append(result)
 
         print (f"(+) {len(resolved_domains_mutated)} records were found (CNAME+A)")
+
+        #additinly add amass results which were not resolved
+        if args.amass:
+            resolved_results_names = [d['name'] for d in resolved_results]
+            print (f"Resolved: {resolved_results_names}")
+
+            for d in amass_domains:
+                if not d['name'] in resolved_results_names:
+                    print (f"unresolved amass domain: {d}")
+                    resolved_results.append({'name':d['name'],'data':'','type':'A'})
 
         #print (list(mutated))
         resolved_names_mutated = [d['name'] for d in resolved_domains_mutated if root_domain in d['name']]

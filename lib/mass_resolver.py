@@ -118,7 +118,7 @@ class MassDnsResolver:
                         response = (('name',name),('data',data),('type',answer['type']))
                         results_set.add(response)
 
-            print (results_set)
+            #print (results_set)
 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
