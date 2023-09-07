@@ -190,13 +190,13 @@ def main():
                 if len(resolved_results) < 1:
                     continue
 
-        output_filepath = os.path.join(args.output_dir, f"raw_{root_domain}.txt")
+        output_filepath = os.path.join(args.output_dir, f"raw_{root_domain}.csv")
         with open(output_filepath, 'w', encoding='utf8', newline='') as output_file:
             fc = csv.DictWriter(output_file, fieldnames=resolved_results[0].keys())
             fc.writeheader()
             fc.writerows(resolved_results)
 
-            print (f"(+)Results saved to raw_{root_domain}.txt")
+            print (f"(+)Results saved to raw_{root_domain}.csv")
 
         if args.enrich:
             print (f"(*) Doing enrichment...")
@@ -214,13 +214,13 @@ def main():
 
             resolved_results = enriched_records
 
-        output_filepath = os.path.join(args.output_dir, f"enriched_{root_domain}.txt")
+        output_filepath = os.path.join(args.output_dir, f"enriched_{root_domain}.csv")
         with open(output_filepath, 'w', encoding='utf8', newline='') as output_file:
             fc = csv.DictWriter(output_file, fieldnames=resolved_results[0].keys())
             fc.writeheader()
             fc.writerows(resolved_results)
 
-            print (f"(+) Enriched results saved to enriched_{root_domain}.txt")
+            print (f"(+) Enriched results saved to enriched_{root_domain}.csv")
 
 if __name__ == "__main__":
     main()
