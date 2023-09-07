@@ -3,7 +3,9 @@ Go to https://github.com/owasp-amass/amass/releases and download any suitable re
 
 ## Install massdns
 git clone https://github.com/blechschmidt/massdns.git
+
 cd massdns
+
 make && make install
 
 ## Install python modules
