@@ -2,4 +2,4 @@ tldextract
 dnsgen
 dnslib
 tld
-python3-dnspython
+dnspython

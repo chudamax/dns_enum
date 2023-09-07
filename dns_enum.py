@@ -27,6 +27,8 @@ def parse_args():
     parser.add_argument('--update-mass-resolvers', help="check mass resolvers", action='store_true')
     parser.add_argument('--enrich', help="enrich resolved domains with data from whois", action='store_true')
     parser.add_argument('--amass', help="check with passive amass checks", action='store_true')
+    parser.add_argument('--brute', help="try to domain bruteforce", action='store_true')
+    parser.add_argument('--altmutations', help="try to find mutations", action='store_true')
     parser.add_argument('--amass-timeout', help="amass timout", default=120)
     parser.add_argument('--debug', help="debug", action='store_true')
 
@@ -52,7 +54,7 @@ def main():
     temp_directory_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/temp/")
     results_directory_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/results/")
 
-    amass_config_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/3rdparty/amass/config.ini")
+    amass_config_path = os.path.normpath(os.path.realpath(os.path.dirname(__file__)) + "/3rdparty/amass/config.yaml")
 
     debug = args.debug
 
@@ -134,38 +136,41 @@ def main():
             for result in resolved_domains:
                 if not result in resolved_results:
                     resolved_results.append(result)
-
+                  
         #bruteforce
-        print ("(*) Running bruteforce...")
-        #subodomains = subodomains[:10]
-        domains_to_check = [f"{subdomain}.{root_domain}" for subdomain in subodomains]
+        if args.brute:
+            print ("(*) Running bruteforce...")
+            #subodomains = subodomains[:10]
+            domains_to_check = [f"{subdomain}.{root_domain}" for subdomain in subodomains]
 
-        #print (f"Domains to check: {domains_to_check}")
+            #print (f"Domains to check: {domains_to_check}")
 
-        resolved_domains = resolver.mass_resolve(domains=domains_to_check, types=['A','CNAME'],  recheck=True)
-        for result in resolved_domains:
-            if not result in resolved_results:
-                resolved_results.append(result)
+            resolved_domains = resolver.mass_resolve(domains=domains_to_check, types=['A','CNAME'],  recheck=True)
+            for result in resolved_domains:
+                if not result in resolved_results:
+                    resolved_results.append(result)
 
-        resolved_names = [d['name'] for d in resolved_results if root_domain in d['name']]
+            resolved_names = [d['name'] for d in resolved_results if root_domain in d['name']]
 
         print (f"(+) {len(resolved_domains)} records were found (CNAME+A)")
         print ( "(+) Domains:")
         for name in resolved_names:
             print (f"{name}")
         
-        print (f"(*) Generating altmutations for {len(resolved_names)} domains")
-        mutated = list(generate(domains=resolved_names, wordlist=altmutations_path))
-        print (mutated[:10])
-        print (f"(+) {len(mutated)} permutations were generated")
 
-        print (f"(*) Resolving altmutations...")
-        resolved_domains_mutated = resolver.mass_resolve(domains=mutated, types=['A','CNAME'],  recheck=True)
-        for result in resolved_domains_mutated:
-            if not result in resolved_results:
-                resolved_results.append(result)
+        if args.altmutations:
+            print (f"(*) Generating altmutations for {len(resolved_names)} domains")
+            mutated = list(generate(domains=resolved_names, wordlist=altmutations_path))
+            print (mutated[:10])
+            print (f"(+) {len(mutated)} permutations were generated")
 
-        print (f"(+) {len(resolved_domains_mutated)} records were found (CNAME+A)")
+            print (f"(*) Resolving altmutations...")
+            resolved_domains_mutated = resolver.mass_resolve(domains=mutated, types=['A','CNAME'],  recheck=True)
+            for result in resolved_domains_mutated:
+                if not result in resolved_results:
+                    resolved_results.append(result)
+
+            print (f"(+) {len(resolved_domains_mutated)} records were found (CNAME+A)")
 
         #additinly add amass results which were not resolved
         if args.amass:
@@ -176,13 +181,14 @@ def main():
                     print (f"unresolved amass domain: {d}")
                     resolved_results.append({'name':d['name'],'data':'','type':'A'})
 
-        #print (list(mutated))
-        resolved_names_mutated = [d['name'] for d in resolved_domains_mutated if root_domain in d['name']]
-        for name in resolved_names_mutated:
-            print (f"{name}")
+        if args.altmutations:
+            #print (list(mutated))
+            resolved_names_mutated = [d['name'] for d in resolved_domains_mutated if root_domain in d['name']]
+            for name in resolved_names_mutated:
+                print (f"{name}")
 
-        if len(resolved_results) < 1:
-            continue
+                if len(resolved_results) < 1:
+                    continue
 
         output_filepath = os.path.join(args.output_dir, f"raw_{root_domain}.txt")
         with open(output_filepath, 'w', encoding='utf8', newline='') as output_file:

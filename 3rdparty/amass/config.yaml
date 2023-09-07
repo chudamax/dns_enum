@@ -1,0 +1,2 @@
+options:
+  datasources: "./datasources.yaml" # the file path that will point to the data source configuration

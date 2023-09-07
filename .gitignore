@@ -1,5 +1,9 @@
 *.ini
-
+temp/
+tmp/
+3rdparty/amass/config.ini
+3rdparty/amass/datasources.yaml
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

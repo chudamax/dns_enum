@@ -17,30 +17,32 @@ def run_amass(domain, config_path, temp_dir='/tmp', timeout=60):
     temp_path = os.path.join(temp_dir,'{0}.json'.format(filename))
     #temp_path = '{0}.json'.format(filename)
 
-    tool_cmd = [
+    run_passive = [
         'amass','enum',
         '-d', domain,
-        '-json', temp_path,
         '-config', config_path,
         '-timeout', str(timeout),
         '--passive'
     ]
-    print (' '.join(tool_cmd))
+    print (' '.join(run_passive))
 
-    # for line in _exec_and_readlines(dirsearcher_cmd):
-    #     if not line:
-    #         continue
+    get_domains = [
+        'amass','db',
+        '-d', domain,
+        '-names'
+    ]
+    print (' '.join(get_domains))
 
     results = []
 
     try:
-        _exec_and_readlines(tool_cmd)
+        #_exec_and_readlines(run_passive)
+        domains = _exec_and_readlines(get_domains)
+        print (domains)
+        for subdomain in domains:
+            doc_json = {"name":subdomain.decode('utf-8'),"domain":domain,"addresses":''}
+            results.append(doc_json)
 
-        with open(temp_path,'r') as f:
-            documents = [doc.strip() for doc in f.readlines()]
-            for doc in documents:
-                results.append(json.loads(doc))
-            os.remove(temp_path)
     except Exception as err:
         print (err)
 
