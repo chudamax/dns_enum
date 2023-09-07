@@ -36,7 +36,7 @@ def run_amass(domain, config_path, temp_dir='/tmp', timeout=60):
     results = []
 
     try:
-        #_exec_and_readlines(run_passive)
+        _exec_and_readlines(run_passive)
         domains = _exec_and_readlines(get_domains)
         print (domains)
         for subdomain in domains:
